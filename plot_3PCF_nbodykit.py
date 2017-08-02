@@ -1,9 +1,3 @@
-"""
-NOTES ON CURRENT CODE:
-    Dominated in upper right hand corner (not what we expected)
-    Ask Nick how he ordered bins
-"""
-
 # Imports
 import sys
 
@@ -11,14 +5,14 @@ import sys
 import numpy as np
 import scipy.special as sp
 import scipy.misc as sm
+from nbodykit.lab import *
 
 # interpolation to set up functions for 2d plots
 from scipy.interpolate import interp1d
 from scipy.interpolate import interp2d
 
 # plotting
-import matplotlib
-matplotlib.use('PS')
+import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 import matplotlib.colors as mcolors
@@ -61,55 +55,22 @@ def add_inner_title(ax, title, loc, size=None, **kwargs):
     at.txt._text.set_path_effects([withStroke(foreground="w", linewidth=3)])
     return at
 
-# Define some variables
-Numell = 11
-NBins = 10 
-Rmin = 10.
-Rmax = 120.
-delta_bin = (Rmax-Rmin)/float(NBins)
 
 filename = str(sys.argv[1])   
 result = Multipoles3PCF.load(filename)
 poles = result.poles
-#print(poles['zeta_0'])
-print("--------------")
-print(poles['zeta_0'][0][0])
-print("--------------")
-print(poles['zeta_0'][0,0])
-plt.show()
 
-exit()
+# For colors on Colormap: https://matplotlib.org/examples/color/colormaps_reference.html
 
-# Create Z and Z_wted and rearrange dataset
-Z = np.zeros((Numell,NBins,NBins)) #multipoles by Nbins by Nbins.
-Z_wted = Z*0.
-for i in range(0, NBins, 1):
-    r1 = i*(delta_bin/2) + Rmin
-    print("r1 = ", r1)
-    for j in range(0, NBins, 1):
-        r2 = j*(delta_bin/2) + Rmin
-        print("r2 = ", r2)
-        for ell in range(0, Numell, 1):
-            Z[ell, i, j] = poles[i][j][ell] # rearrange the dataset
-            Z_wted[ell, i, j] = poles[i][j][ell]*r1**2*r2**2 # put weights on Z
-            
-
-
-"""
-For colors on Colormap: https://matplotlib.org/examples/color/colormaps_reference.html
-"""
-# Plotting multipoles (L=0 > L=10)
-
+# plotting multipoles
 F = plt.figure(1, (8, 8))
 grid = ImageGrid(F, 111, nrows_ncols = (3, 3), direction="row", axes_pad = 0.05, add_all=True, label_mode = "1", share_all = True, cbar_location="right", cbar_mode="single", cbar_size="5%", cbar_pad=0.05)
 
 # putting each of the mulitpole plots on grids
 count=0
 for ax in grid:
-    Z_new = Z[:][count][:]
-    if count == 0:
-        print('Z_new = ', Z_new)
-    im=ax.imshow(Z_new, norm=MidpointNormalize(midpoint=0), cmap='RdBu_r', origin='upper')
+    Z_new = poles['zeta_'+ str(count)]
+    im=ax.imshow(Z_new, norm=MidpointNormalize(midpoint=0), cmap='RdBu_r', origin='lower')
     count += 1
 
 
