@@ -159,40 +159,37 @@ def threej(j1,j2,j3):
     return (-1)**(j/2.0) * triplefact(j1,j2,j3) / (triplefact(2*j1,2*j2,2*j3)*(j+1))**0.5
     # DJE did check this against Wolfram
 
-"""
-Notes from Zack:
 
-I think this is mostly right but you need to address a particular element of M or you will just have a constant scalar and not a tensor.  I would define m=np.zeros((dim1,dim2,etc)) so it has the right shape, ell by ell' by m by j by j' by s. 
-
-On the other hand it may even be better to map the 6-d to 2-d right here. So you could have M(index1=some formula, index2=some formula) inside the loops you already have, with these formulas being those we discussed to map 6 to 2-d. 
-
-You'll still have to setup M with the right shape  but in this case it is longer in each dimension but has only two dimensions. ""
-
-"""
-# WARNING: Check this setup of the matrix!
-# What does flist look like for the anisotropic case?
+## Edge Correction Matrix 
+# Equations (19) and (20) in Practical Computation Anisotropic paper
 def Mjl_calc(j, jprime, s, ell, ellprime, m, flist):
-    p = s-m
-    M= np.zeros((ell, ellprime, m, j, jprime, s)) 
-    for p in np.arange(1, len(flist)):
-        for k in np.arange(1,len(flist[p])):
-            for kprime in np.arange(1, len(flist[p][k])):
-                for i in M:
-                    i += gaunt(m, p, -s, ell, k, j)*gaunt(-m, -p, s, ellprime, kprime, jprime)*flist[p][k][kprime]
-                return M
-
-
-            
-# Mock example of what Mjl will look like and how we will flatten it
-Mjl = Mjl_calc(j, jprime, s, ell, ellprime, m, flist)
-# bin_dict = particular bin combinations (r1, r2, triangle side lengths) we want to use 
-num_of_ells = 11
-offset_r1 = 2
-offset_r2 = 5
-
-x = flatten_6d_2d_mock_covar_bd(Mjl, bin_dict, num_of_ells, offset_r1, offset_r2)
-print x
-           
+    
+    # M is originally a 6d tensor w/ shape: j x jprime x s x ell x ellprime x m
+    M_6d = np.zeros(((len(j), len(jprime), len(s), len(ell), len(ellprime), len(m)))) 
+    
+    # Just some values for remapping
+    bin_dict = [] # What is bin_dict?
+    num_of_ells = 11
+    offset_r1 = 0
+    offset_r2 = 0
+    
+    # Now, we remap the 6d tensor to a 2d matrix
+    M_2d = flatten_6d_2d_mock_covar_bd(M_6d, bin_dict, num_of_ells, offset_r1, offset_r2)
+    
+    # Move through flist and compute M_2d at each fancy_J, fancy_L index
+    for p in np.arange(1, len(flist)): # p != 0
+        if p == s-m: # p is set by s and m
+            for k in np.arange(1,len(flist[p])): # k != 0
+                for kprime in np.arange(1, len(flist[p][k])): # kprime != 0
+                    for fancy_J in np.arange(0,len(M_2d)): # fancy_J = new 2d integer for jj's
+                        for fancy_L in np.arange(0,len(M_2d[fancy_J])): # fancy_L = new 2d integer for ll'm
+                            M_2d[fancy_J][fancy_L] += gaunt(m, p, -s, ell, k, j)*gaunt(-m, -p, s, ellprime, kprime, jprime)*flist[p][k][kprime]
+                                       
+                            
+        else:
+            raise ValueError('p != s-m')
+       
+    return M_2d           
             
 """
 print
